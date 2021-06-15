@@ -4,6 +4,7 @@ import json
 
 import cherrypy
 import QLearner as ql
+import numpy as np
 
 """
 This is a simple Battlesnake server written in Python.
@@ -11,16 +12,33 @@ For instructions see https://github.com/BattlesnakeOfficial/starter-snake-python
 """
 
 class Battlesnake(object):
+    # Global variable
+    STEP_REWARD = -1.0
+
     def __init__(self):
         # Runtime settings
         self.is_learning_mode = True
-        self.learner = None
+        self.prev_state = {}
 
         # Load learner parameters from learner.json
         with open('learner.json') as f:
             self.config = json.load(f)
             if 'is_learning_mode' in self.config:
                 self.is_learning_mode = self.config['is_learning_mode']
+
+        # Initialize the QLearner
+        self.learner = ql.QLearner(
+            num_states=self.config['num_states'],
+            num_actions=self.config['num_actions'],
+            alpha=self.config['alpha'],
+            gamma=self.config['gamma'],
+            rar=self.config['rar'],
+            radr=self.config['radr'],
+            dyna=self.config['dyna'],
+            verbose=self.config['verbose'],
+        )
+        if 'Q' in self.config:
+            self.learner.load(self.config['Q'])
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
@@ -53,25 +71,9 @@ class Battlesnake(object):
         # cherrypy.request.json contains information about the game that's about to be played.
         data = cherrypy.request.json
 
-        # Initialize the QLearner
-        self.learner = ql.QLearner(
-            num_states=self.config['num_states'],
-            num_actions=self.config['num_actions'],
-            alpha=self.config['alpha'],
-            gamma=self.config['gamma'],
-            rar=self.config['rar'],
-            radr=self.config['radr'],
-            dyna=self.config['dyna'],
-            verbose=self.config['verbose'],
-        )
+        state = self.__discretize(data)
+        _ = self.learner.querysetstate(state)
 
-        if 'Q' in self.config:
-            self.learner.load(self.config['Q'])
-
-        if self.learner:
-            print("Learner Q table:")
-            print(self.learner.dumps())
-            print()
         print("START")
         return "ok"
 
@@ -86,8 +88,17 @@ class Battlesnake(object):
 
         # Choose a random direction to move in
         possible_moves = ["up", "down", "left", "right"]
-        move = random.choice(possible_moves)
-        # TODO: construct states he
+        #move = random.choice(possible_moves)
+
+        # Construct states and query learner
+        r = self.__calc_reward(data)
+        state = self.__discretize(data)
+        if self.is_learning_mode:
+            action = self.learner.query(state, r)
+        else:
+            action = self.learner.querysetstate(state)
+        move = possible_moves[action]
+        self.prev_state = self.__construct_remember_state(data)
 
         print(f"THIS MOVE: {move}")
         return {"move": move}
@@ -99,12 +110,19 @@ class Battlesnake(object):
         # It's purely for informational purposes, you don't have to make any decisions here.
         data = cherrypy.request.json
 
+        # Punish or reward when game end
+        r = self.__calc_reward(data)
+        state = self.__discretize(data)
+        if self.is_learning_mode:
+            _ = self.learner.query(state, r)
+
         print("END")
-        if self.learner:
-            print("Learner Q table:")
-            print(self.learner.dumps())
-            print()
-        self.learner = None
+
+        # Record Q table
+        # print("Learner Q table:")
+        print(self.learner.dump())
+        # print()
+
         return "ok"
 
     # Helper methods
@@ -112,6 +130,48 @@ class Battlesnake(object):
         # TODO: convert data to state
         return
 
+
+    # Helper methods
+    def __discretize(self, data):
+        # 0 = empty
+        # 1 = barrier
+        # 2 = food
+        # 3 = body
+        # 4 = head
+        board = data['board']
+        h = board['height']
+        w = board['width']
+        states = np.zeros((h, w))
+
+        if 'snakes' in board:
+            for snake in board['snakes']:
+                for pos in snake['body']:
+                    states[pos['y'], pos['x']] = 1
+        if 'food' in board:
+            for pos in board['food']:
+                states[pos['y'], pos['x']] = 2
+        you = data['you']
+        for pos in you['body']:
+            states[pos['y'], pos['x']] = 3
+        head = you['head']
+        states[pos['y'], pos['x']] = 4
+
+        return "".join([str(int(x)) for x in states.ravel()])
+
+    def __construct_remember_state(self, data):
+        rem = {}
+        rem['health'] = data['you']['health']
+        rem['length'] = data['you']['length']
+        return rem
+
+    def __calc_reward(self, data):
+        rem = self.__construct_remember_state(data)
+        r = Battlesnake.STEP_REWARD
+        if rem['health'] == 0:
+            r = -100.0
+        elif 'health' in self.prev_state and rem['health'] >= self.prev_state['health']:
+            r = 100.0
+        return r
 
 if __name__ == "__main__":
     server = Battlesnake()

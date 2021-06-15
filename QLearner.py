@@ -59,13 +59,13 @@ class QLearner(object):
         self.exp_s_prime = []
         self.exp_r = []
 
-    def load(self, data):
+    def load(self, fname):
         # Load Q table
-        self.Q.load(data)
+        self.Q.load(fname)
 
-    def dumps(self):
+    def dump(self):
         # dump Q table as json string
-        return self.Q.dumps()
+        return self.Q.dump()
 
     def querysetstate(self, s):
         """
