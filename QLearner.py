@@ -1,44 +1,13 @@
-""""""
-"""
-Template for implementing QLearner  (c) 2015 Tucker Balch
-
-Copyright 2018, Georgia Institute of Technology (Georgia Tech)
-Atlanta, Georgia 30332
-All Rights Reserved
-
-Template code for CS 4646/7646
-
-Georgia Tech asserts copyright ownership of this template and all derivative
-works, including solutions to the projects assigned in this course. Students
-and other users of this template code are advised not to share it with others
-or to make it available on publicly viewable websites including repositories
-such as github and gitlab.  This copyright statement should not be removed
-or edited.
-
-We do grant permission to share solutions privately with non-students such
-as potential employers. However, sharing with other current or future
-students of CS 7646 is prohibited and subject to being investigated as a
-GT honor code violation.
-
------do not edit anything above this line---
-
-Student Name: Tucker Balch (replace with your name)
-GT User ID: tb34 (replace with your User ID)
-GT ID: 900897987 (replace with your GT ID)
-"""
-
 import json
 
 import random as rand
 
 import numpy as np
 
+from QTable import QTableMap as QTable
+
 
 class QLearner(object):
-
-    def author(self):
-        return 'ytsai36'
-
     """
     This is a Q learner object.
 
@@ -83,20 +52,20 @@ class QLearner(object):
         self.dyna = dyna
         self.s = 0
         self.a = 0
-        self.Q = np.zeros((num_states, num_actions))
+        self.Q = QTable(num_states, num_actions)
         # Dyna-Q parameters
         self.exp_s = []
         self.exp_a = []
         self.exp_s_prime = []
         self.exp_r = []
 
-    def load(self, Q):
+    def load(self, data):
         # Load Q table
-        self.Q = np.array(Q)
+        self.Q.load(data)
 
-    def dump(self):
+    def dumps(self):
         # dump Q table as json string
-        return json.dumps(self.Q.tolist())
+        return self.Q.dumps()
 
     def querysetstate(self, s):
         """
@@ -161,7 +130,8 @@ class QLearner(object):
         # Fist component is update from past experience
         # Second component is update from imporved estimate from new state
         # which is immediate reward + discounted rate * future reward
-        self.Q[s, a] = (1 - self.alpha) * self.Q[s, a] + self.alpha * (r + self.gamma * self.Q[s_prime, np.argmax(self.Q[s_prime])])
+        new_val = (1 - self.alpha) * self.Q.get(s, a) + self.alpha * (r + self.gamma * self.Q.get(s_prime, np.argmax(self.Q.get(s_prime))))
+        self.Q.update(s, a, new_val)
 
     def __choose_next_action(self, s_prime, decay=False):
         # Random select an action or find the optimal one
@@ -169,7 +139,7 @@ class QLearner(object):
         if prob <= self.rar:
             action = rand.randint(0, self.num_actions - 1)
         else:
-            action = np.argmax(self.Q[s_prime])
+            action = np.argmax(self.Q.get(s_prime))
         # Decay the random probability
         if decay:
             self.rar *= self.radr

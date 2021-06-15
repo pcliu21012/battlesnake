@@ -70,7 +70,7 @@ class Battlesnake(object):
 
         if self.learner:
             print("Learner Q table:")
-            print(self.learner.dump())
+            print(self.learner.dumps())
             print()
         print("START")
         return "ok"
@@ -102,10 +102,15 @@ class Battlesnake(object):
         print("END")
         if self.learner:
             print("Learner Q table:")
-            print(self.learner.dump())
+            print(self.learner.dumps())
             print()
         self.learner = None
         return "ok"
+
+    # Helper methods
+    def __convert_state(self, data):
+        # TODO: convert data to state
+        return
 
 
 if __name__ == "__main__":
