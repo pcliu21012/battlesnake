@@ -33,10 +33,10 @@ python server.py
 
 Testing your api with curl
 ```shell
-curl -X POST -H "Content-Type: application/json" -d @test-data.json http://0.0.0.0:8080/start
+curl -X POST -H "Accept: application/json" -H "Content-Type: application/json" -d @test-data.json http://0.0.0.0:8080/start
 ```
 
 Switch learning mode in runtime
 ```shell
-curl -X GET -H "Accept: application/json" -H "Content-Type: application/json" -d @test-data.json http://0.0.0.0:8080/switch
+curl -X GET -H "Accept: application/json" -H "Content-Type: application/json" http://0.0.0.0:8080/switch
 ```

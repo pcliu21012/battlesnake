@@ -164,7 +164,7 @@ curl -X POST -H "Content-Type: application/json" -d @test-data.json http://0.0.0
 
 Switch learning mode in runtime
 ```shell
-curl -X GET -H "Accept: application/json" -H "Content-Type: application/json" -d @test-data.json http://0.0.0.0:8080/switch
+curl -X GET -H "Accept: application/json" -H "Content-Type: application/json" http://0.0.0.0:8080/switch
 ```
 
 ---
