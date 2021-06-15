@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "starter-snake-python"
+name = "qlearner-snake-python"
 version = "1.0.0"
-description = "A simple Battlesnake written in Python"
-authors = ["Battlesnake Developers <developers@battlesnake.com>"]
+description = "A simple QLearner Battlesnake written in Python"
+authors = ["Pi-Ching Liu <pichingliu@google.com>", "Yao-Sheng Tsa <yaoshen@google.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"

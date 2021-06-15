@@ -1,15 +1,20 @@
 import os
 import random
+import json
 
 import cherrypy
+import QLearner as ql
 
 """
 This is a simple Battlesnake server written in Python.
 For instructions see https://github.com/BattlesnakeOfficial/starter-snake-python/README.md
 """
 
-
 class Battlesnake(object):
+    # Runtime settings
+    is_learning_mode = True
+    learner = None
+
     @cherrypy.expose
     @cherrypy.tools.json_out()
     def index(self):
@@ -25,12 +30,42 @@ class Battlesnake(object):
         }
 
     @cherrypy.expose
+    @cherrypy.tools.json_out()
+    def switch(self):
+        # This function is called when you want to swtich between learning and testing modes
+        Battlesnake.is_learning_mode = not Battlesnake.is_learning_mode
+        return {
+            "is_learning_mode": Battlesnake.is_learning_mode,
+        }
+
+    @cherrypy.expose
     @cherrypy.tools.json_in()
     def start(self):
         # This function is called everytime your snake is entered into a game.
         # cherrypy.request.json contains information about the game that's about to be played.
         data = cherrypy.request.json
 
+        # Read learner.json with map data and initialize QLearner
+        with open('learner.json') as f:
+            config = json.load(f)
+            Battlesnake.learner = ql.QLearner(
+                num_states=config['num_states'],
+                num_actions=config['num_actions'],
+                alpha=config['alpha'],
+                gamma=config['gamma'],
+                rar=config['rar'],
+                radr=config['radr'],
+                dyna=config['dyna'],
+                verbose=config['verbose'],
+            )  # initialize the learner
+
+            if 'Q' in config:
+                Battlesnake.learner.load(config['Q'])
+
+        if Battlesnake.learner:
+            print("Learner Q table:")
+            print(Battlesnake.learner.dump())
+            print()
         print("START")
         return "ok"
 
@@ -46,6 +81,7 @@ class Battlesnake(object):
         # Choose a random direction to move in
         possible_moves = ["up", "down", "left", "right"]
         move = random.choice(possible_moves)
+        # TODO: construct states he
 
         print(f"THIS MOVE: {move}")
         return {"move": move}
@@ -58,6 +94,11 @@ class Battlesnake(object):
         data = cherrypy.request.json
 
         print("END")
+        if Battlesnake.learner:
+            print("Learner Q table:")
+            print(Battlesnake.learner.dump())
+            print()
+        Battlesnake.learner = None
         return "ok"
 
 
