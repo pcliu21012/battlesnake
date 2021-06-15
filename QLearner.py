@@ -63,7 +63,7 @@ class QLearner(object):
         # Load Q table
         self.Q.load(fname)
 
-    def dumps(self):
+    def dump(self):
         # dump Q table as json string
         return self.Q.dump()
 
