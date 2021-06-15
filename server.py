@@ -11,9 +11,16 @@ For instructions see https://github.com/BattlesnakeOfficial/starter-snake-python
 """
 
 class Battlesnake(object):
-    # Runtime settings
-    is_learning_mode = True
-    learner = None
+    def __init__(self):
+        # Runtime settings
+        self.is_learning_mode = True
+        self.learner = None
+
+        # Load learner parameters from learner.json
+        with open('learner.json') as f:
+            self.config = json.load(f)
+            if 'is_learning_mode' in self.config:
+                self.is_learning_mode = self.config['is_learning_mode']
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
@@ -33,9 +40,10 @@ class Battlesnake(object):
     @cherrypy.tools.json_out()
     def switch(self):
         # This function is called when you want to swtich between learning and testing modes
-        Battlesnake.is_learning_mode = not Battlesnake.is_learning_mode
+        self.is_learning_mode = not self.is_learning_mode
+        print("is_learning_mode = {}".format(self.is_learning_mode))
         return {
-            "is_learning_mode": Battlesnake.is_learning_mode,
+            "is_learning_mode": self.is_learning_mode,
         }
 
     @cherrypy.expose
@@ -45,26 +53,24 @@ class Battlesnake(object):
         # cherrypy.request.json contains information about the game that's about to be played.
         data = cherrypy.request.json
 
-        # Read learner.json with map data and initialize QLearner
-        with open('learner.json') as f:
-            config = json.load(f)
-            Battlesnake.learner = ql.QLearner(
-                num_states=config['num_states'],
-                num_actions=config['num_actions'],
-                alpha=config['alpha'],
-                gamma=config['gamma'],
-                rar=config['rar'],
-                radr=config['radr'],
-                dyna=config['dyna'],
-                verbose=config['verbose'],
-            )  # initialize the learner
+        # Initialize the QLearner
+        self.learner = ql.QLearner(
+            num_states=self.config['num_states'],
+            num_actions=self.config['num_actions'],
+            alpha=self.config['alpha'],
+            gamma=self.config['gamma'],
+            rar=self.config['rar'],
+            radr=self.config['radr'],
+            dyna=self.config['dyna'],
+            verbose=self.config['verbose'],
+        )
 
-            if 'Q' in config:
-                Battlesnake.learner.load(config['Q'])
+        if 'Q' in self.config:
+            self.learner.load(self.config['Q'])
 
-        if Battlesnake.learner:
+        if self.learner:
             print("Learner Q table:")
-            print(Battlesnake.learner.dump())
+            print(self.learner.dump())
             print()
         print("START")
         return "ok"
@@ -94,11 +100,11 @@ class Battlesnake(object):
         data = cherrypy.request.json
 
         print("END")
-        if Battlesnake.learner:
+        if self.learner:
             print("Learner Q table:")
-            print(Battlesnake.learner.dump())
+            print(self.learner.dump())
             print()
-        Battlesnake.learner = None
+        self.learner = None
         return "ok"
 
 

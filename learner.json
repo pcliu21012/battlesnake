@@ -1,10 +1,11 @@
 {
-    "num_states": 11,
-    "num_actions": 11,
+    "num_states": 121,
+    "num_actions": 4,
     "alpha": 0.2,
     "gamma": 0.9,
     "rar": 0.98,
     "radr": 0.999,
     "dyna": 0,
-    "verbose": false
+    "verbose": false,
+    "is_learning_mode": true
 }
