@@ -9,5 +9,5 @@
     "verbose": false,
     "is_learning_mode": true,
     "health_threshold": 30,
-    "Q": "qtable_v1.json"
+    "Q": "qtable.json"
 }

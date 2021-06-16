@@ -44,7 +44,8 @@ class Battlesnake(object):
             verbose=self.config['verbose'],
         )
         if 'Q' in self.config:
-            self.learner.load(self.config['Q'])
+            if os.path.isfile(self.config['Q']):
+                self.learner.load(self.config['Q'])
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
@@ -61,24 +62,15 @@ class Battlesnake(object):
         }
 
     @cherrypy.expose
-    @cherrypy.tools.json_out()
-    def switch(self):
-        # This function is called when you want to swtich between learning and testing modes
-        self.is_learning_mode = not self.is_learning_mode
-        print("is_learning_mode = {}".format(self.is_learning_mode))
-        return {
-            "is_learning_mode": self.is_learning_mode,
-        }
-
-    @cherrypy.expose
     @cherrypy.tools.json_in()
     def start(self):
         # This function is called everytime your snake is entered into a game.
         # cherrypy.request.json contains information about the game that's about to be played.
         data = cherrypy.request.json
 
-        state, block_arr = util.discretize_narrow_directional_area(data, self.config['num_actions'], self.health_threshold)
-        _ = self.learner.querysetstate(state, block_arr)
+        # Start the game with initial setup
+        game_id = self.__unique_id(data)
+        self.learner.start(game_id)
 
         print("START")
         return "ok"
@@ -89,7 +81,6 @@ class Battlesnake(object):
     def move(self):
         # This function is called on every turn of a game. It's how your snake decides where to move.
         # Valid moves are "up", "down", "left", or "right".
-        # TODO: Use the information in cherrypy.request.json to decide your next move.
         data = cherrypy.request.json
 
         # Choose a random direction to move in
@@ -97,16 +88,26 @@ class Battlesnake(object):
         #move = random.choice(possible_moves)
 
         # Construct states and query learner
-        r = self.__calc_reward(data)
-        state, block_arr = util.discretize_narrow_directional_area(data, self.config['num_actions'], self.health_threshold)
-        if self.is_learning_mode:
-            action = self.learner.query(state, r, block_arr)
+        game_id = self.__unique_id(data)
+        if game_id not in self.prev_state:
+            state, block_arr = util.discretize_narrow_directional_area(data, self.config['num_actions'], self.health_threshold)
+            action = self.learner.querysetstate(state, block_arr, game_id)
         else:
-            action = self.learner.querysetstate(state, block_arr)
-        move = possible_moves[action]
-        self.prev_state = self.__construct_remember_state(data)
+            # Calculate reward based on previous state
+            prev_s = self.prev_state[game_id]
+            r = self.__calc_reward(data, prev_s)
 
-        print(f"THIS MOVE: {move}")
+            state, block_arr = util.discretize_narrow_directional_area(data, self.config['num_actions'], self.health_threshold)
+            if self.is_learning_mode:
+                action = self.learner.query(state, r, block_arr, game_id)
+            else:
+                action = self.learner.querysetstate(state, block_arr, game_id)
+        move = possible_moves[action]
+
+        # Memorize previous state
+        self.prev_state[game_id] = self.__construct_remember_state(data)
+
+        print(f"THIS MOVE({game_id}): {move}")
         return {"move": move}
 
     @cherrypy.expose
@@ -116,32 +117,54 @@ class Battlesnake(object):
         # It's purely for informational purposes, you don't have to make any decisions here.
         data = cherrypy.request.json
 
-        # Punish or reward when game end
-        r = self.__calc_reward(data)
-        state, block_arr = util.discretize_narrow_directional_area(data, self.config['num_actions'], self.health_threshold)
-        if self.is_learning_mode:
-            _ = self.learner.query(state, r, block_arr)
+        game_id = self.__unique_id(data)
+        # Punish or reward when game end in learning mode
+        if self.is_learning_mode and game_id in self.prev_state:
+            # Calculate reward based on previous state
+            prev_s = self.prev_state[game_id]
+            r = self.__calc_reward(data, prev_s)
+            state, block_arr = util.discretize_narrow_directional_area(data, self.config['num_actions'], self.health_threshold)
+            _ = self.learner.query(state, r, block_arr, game_id)
+            self.prev_state.pop(game_id, None)
+            # print(self.learner.dump(self.config['Q']))
+        self.learner.end(game_id)
 
         print("END")
-
-        # Record Q table in learning mode
-        if self.is_learning_mode:
-          print(self.learner.dump(self.config['Q']))
-
         return "ok"
 
-    def __construct_remember_state(self, data):
-        rem = {}
-        rem['health'] = data['you']['health']
-        rem['length'] = data['you']['length']
-        return rem
+    @cherrypy.expose
+    def switch(self):
+        # This function is called when you want to swtich between learning and testing modes
+        self.is_learning_mode = not self.is_learning_mode
+        msg = "is_learning_mode = {}".format(self.is_learning_mode)
+        print(msg)
+        return msg
 
-    def __calc_reward(self, data):
-        rem = self.__construct_remember_state(data)
+    @cherrypy.expose
+    def dump(self):
+        # This function is called when you want to dump the Q tablel to file
+        print(self.learner.dump(self.config['Q']))
+        return "ok"
+
+    # Helper methods
+    def __unique_id(self, data):
+        # concat game_id with you_id
+        game_id = data['game']['id']
+        you_id = data['you']['id']
+        return f"{game_id}:{you_id}"
+
+    def __construct_remember_state(self, data):
+        return {
+            'health': data['you']['health'],
+            'length': data['you']['length'],
+        }
+
+    def __calc_reward(self, data, prev_s):
+        curr_s = self.__construct_remember_state(data)
         r = Battlesnake.STEP_REWARD
-        if rem['health'] == 0:
+        if curr_s['health'] == 0:
             r = -10000.0
-        elif 'health' in self.prev_state and rem['health'] >= self.prev_state['health']:
+        elif curr_s['health'] >= prev_s['health']:
             r = 100.0
         return r
 
