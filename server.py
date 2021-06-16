@@ -124,7 +124,7 @@ class Battlesnake(object):
 
         # Record Q table in learning mode
         if self.is_learning_mode:
-          print(self.learner.dump(self.Q['Q']))
+          print(self.learner.dump(self.config['Q']))
 
         return "ok"
 
