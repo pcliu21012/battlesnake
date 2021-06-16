@@ -46,7 +46,7 @@ class QTableMap(object):
     def load(self, fname):
         with open(fname) as f:
             data = json.load(f)
-            self.Q = np.array(data)
+            self.Q = data
             # print(self.Q)
 
     def dump(self):
