@@ -1,13 +1,11 @@
 {
     "num_states": 320000,
-    "num_actions": 4,
-    "alpha": 0.2,
-    "gamma": 0.9,
-    "rar": 0.98,
-    "radr": 0.999,
-    "dyna": 0,
-    "verbose": false,
-    "is_learning_mode": true,
-    "health_threshold": 30,
-    "Q": "qtable.json"
+    "rar": 0.5,
+    "Q": "qtable.json",
+    "runtime": {
+        "is_learning_mode": true,
+        "dump_at_end": true,
+        "health_threshold": 100,
+        "health_threshold_decay": 0.9
+    }
 }
