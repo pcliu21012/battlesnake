@@ -7,3 +7,4 @@ authors = ["Pi-Ching Liu <pichingliu@google.com>", "Yao-Sheng Tsa <yaoshen@googl
 [tool.poetry.dependencies]
 python = "^3.8"
 cherrypy = "^18.6"
+numpy = "^1.20.3"
