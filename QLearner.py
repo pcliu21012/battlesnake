@@ -67,17 +67,19 @@ class QLearner(object):
         # dump Q table as json string
         return self.Q.dump()
 
-    def querysetstate(self, s):
+    def querysetstate(self, s, block_arr):
         """
         Update the state without updating the Q-table
 
         :param s: The new state
         :type s: int
+        :param block_arr: Array of boolean indicates if there is an immediate block at earch direction. ["up", "down", "left", "right"]
+        :type: array(boolean)
         :return: The selected action
         :rtype: int
         """
         # This function usaully used for setting initial state and action
-        action = self.__choose_next_action(s, decay=False)
+        action = self.__choose_next_action(s, block_arr, decay=False)
         if self.verbose:
             print(f"s = {s}, a = {action}")
         # Saved the new state
@@ -85,7 +87,7 @@ class QLearner(object):
         self.a = action
         return action
 
-    def query(self, s_prime, r):
+    def query(self, s_prime, r, block_arr):
         """
         Update the Q table and return an action
 
@@ -93,6 +95,8 @@ class QLearner(object):
         :type s_prime: int
         :param r: The immediate reward
         :type r: float
+        :param block_arr: Array of boolean indicates if there is an immediate block at earch direction. ["up", "down", "left", "right"]
+        :type: array(boolean)
         :return: The selected action
         :rtype: int
         """
@@ -106,7 +110,7 @@ class QLearner(object):
             self.__run_dyna(self.s, self.a, s_prime, r)
 
         # Choose next action and decaly the probability
-        action = self.__choose_next_action(s_prime, decay=True)
+        action = self.__choose_next_action(s_prime, block_arr, decay=True)
 
         if self.verbose:
             print(f"s = {s_prime}, a = {action}, r={r}")
@@ -133,13 +137,20 @@ class QLearner(object):
         new_val = (1 - self.alpha) * self.Q.get(s, a) + self.alpha * (r + self.gamma * self.Q.get(s_prime, np.argmax(self.Q.get(s_prime))))
         self.Q.update(s, a, new_val)
 
-    def __choose_next_action(self, s_prime, decay=False):
+    def __choose_next_action(self, s_prime, block_arr, decay=False):
         # Random select an action or find the optimal one
+        if np.sum(block_arr) == self.num_actions:
+            return 0
+
         prob = rand.uniform(0.0, 1.0)
         if prob <= self.rar:
-            action = rand.randint(0, self.num_actions - 1)
+            availables = np.invert(block_arr)
+            available_actions = np.array(range(self.num_actions))[availables]
+            action = rand.choice(available_actions)
         else:
-            action = np.argmax(self.Q.get(s_prime))
+            constraint_arr = np.array(self.Q.get(s_prime))
+            constraint_arr[block_arr] = float('-inf')
+            action = np.argmax(constraint_arr)
         # Decay the random probability
         if decay:
             self.rar *= self.radr
