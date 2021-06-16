@@ -50,14 +50,26 @@ class QLearner(object):
         self.rar = rar
         self.radr = radr
         self.dyna = dyna
-        self.s = 0
-        self.a = 0
+        self.s = {}
+        self.a = {}
         self.Q = QTable(num_states, num_actions)
         # Dyna-Q parameters
         self.exp_s = []
         self.exp_a = []
         self.exp_s_prime = []
         self.exp_r = []
+
+    # Start a new game with game ID to support concurrency
+    def start(self, game_id):
+        self.s[game_id] = 0
+        self.a[game_id] = 0
+        print("Start a new game: {}".format(game_id))
+
+    # Clean up remember state to support concurrency and save memory
+    def end(self, game_id):
+        self.s.pop(game_id, None)
+        self.a.pop(game_id, None)
+        print("End a game: {}".format(game_id))
 
     def load(self, fname):
         # Load Q table
@@ -67,14 +79,16 @@ class QLearner(object):
         # dump Q table as json string
         return self.Q.dump(fname)
 
-    def querysetstate(self, s, block_arr):
+    def querysetstate(self, s, block_arr, game_id):
         """
         Update the state without updating the Q-table
 
         :param s: The new state
         :type s: int
         :param block_arr: Array of boolean indicates if there is an immediate block at earch direction. ["up", "down", "left", "right"]
-        :type: array(boolean)
+        :type block_arr: array(boolean)
+        :param game_id: The Game ID for retireve corresponding memory state
+        :type game_id: str
         :return: The selected action
         :rtype: int
         """
@@ -83,11 +97,11 @@ class QLearner(object):
         if self.verbose:
             print(f"s = {s}, a = {action}")
         # Saved the new state
-        self.s = s
-        self.a = action
+        self.s[game_id] = s
+        self.a[game_id] = action
         return action
 
-    def query(self, s_prime, r, block_arr):
+    def query(self, s_prime, r, block_arr, game_id):
         """
         Update the Q table and return an action
 
@@ -96,18 +110,20 @@ class QLearner(object):
         :param r: The immediate reward
         :type r: float
         :param block_arr: Array of boolean indicates if there is an immediate block at earch direction. ["up", "down", "left", "right"]
-        :type: array(boolean)
+        :type block_arr: array(boolean)
+        :param game_id: The Game ID for retireve corresponding memory state
+        :type game_id: str
         :return: The selected action
         :rtype: int
         """
 
         # First, update the Q table and get a_prime
-        self.__update_Q_table(self.s, self.a, s_prime, r)
-        self.__update_exp(self.s, self.a, s_prime, r)
+        self.__update_Q_table(self.s[game_id], self.a[game_id], s_prime, r)
+        self.__update_exp(self.s[game_id], self.a[game_id], s_prime, r)
 
         # Run Dyna to bosst learning if needed
         if self.dyna > 0:
-            self.__run_dyna(self.s, self.a, s_prime, r)
+            self.__run_dyna(self.s[game_id], self.a[game_id], s_prime, r)
 
         # Choose next action and decaly the probability
         action = self.__choose_next_action(s_prime, block_arr, decay=True)
@@ -116,8 +132,8 @@ class QLearner(object):
             print(f"s = {s_prime}, a = {action}, r={r}")
 
         # Saved the new state
-        self.s = s_prime
-        self.a = action
+        self.s[game_id] = s_prime
+        self.a[game_id] = action
         return action
 
     def __update_exp(self, s, a, s_prime, r):
