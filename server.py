@@ -18,6 +18,7 @@ class Battlesnake(object):
         # Runtime settings
         self.is_learning_mode = True
         self.prev_state = {}
+        self.health_threshold = 30
 
         # Load learner parameters from learner.json
         with open('learner.json') as f:
@@ -70,8 +71,8 @@ class Battlesnake(object):
         # cherrypy.request.json contains information about the game that's about to be played.
         data = cherrypy.request.json
 
-        state = self.__discretize(data)
-        _ = self.learner.querysetstate(state)
+        state, block_arr = self.__discretize(data)
+        _ = self.learner.querysetstate(state, block_arr)
 
         print("START")
         return "ok"
@@ -91,11 +92,11 @@ class Battlesnake(object):
 
         # Construct states and query learner
         r = self.__calc_reward(data)
-        state = self.__discretize(data)
+        state, block_arr = self.__discretize(data)
         if self.is_learning_mode:
-            action = self.learner.query(state, r)
+            action = self.learner.query(state, r, block_arr)
         else:
-            action = self.learner.querysetstate(state)
+            action = self.learner.querysetstate(state, block_arr)
         move = possible_moves[action]
         self.prev_state = self.__construct_remember_state(data)
 
@@ -111,9 +112,9 @@ class Battlesnake(object):
 
         # Punish or reward when game end
         r = self.__calc_reward(data)
-        state = self.__discretize(data)
+        state, block_arr = self.__discretize(data)
         if self.is_learning_mode:
-            _ = self.learner.query(state, r)
+            _ = self.learner.query(state, r, block_arr)
 
         print("END")
 
@@ -124,19 +125,13 @@ class Battlesnake(object):
 
         return "ok"
 
-    # Helper methods
-    def __convert_state(self, data):
-        # TODO: convert data to state
-        return
-
 
     # Helper methods
     def __discretize(self, data):
         # 0 = empty
         # 1 = barrier
         # 2 = food
-        # 3 = body
-        # 4 = head
+        # 3 = head
         board = data['board']
         h = board['height']
         w = board['width']
@@ -151,11 +146,51 @@ class Battlesnake(object):
                 states[pos['y'], pos['x']] = 2
         you = data['you']
         for pos in you['body']:
-            states[pos['y'], pos['x']] = 3
+            states[pos['y'], pos['x']] = 1
         head = you['head']
-        states[pos['y'], pos['x']] = 4
+        states[head['y'], head['x']] = 3
 
-        return "".join([str(int(x)) for x in states.ravel()])
+        # Block_arr inidicates if there is an immediate block at earch direction. ["up", "down", "left", "right"]
+        block_arr = np.zeros(self.config['num_actions'], dtype=bool)
+        def isInsideBoundary(y, x):
+            if y < 0 or x < 0 or y >= h or x >= w:
+                return False
+            return True
+        if isInsideBoundary(head['y'] + 1, head['x']) and states[head['y'] + 1, head['x']] == 1:
+            block_arr[0] = True
+        if isInsideBoundary(head['y'] - 1, head['x']) and states[head['y'] - 1, head['x']] == 1:
+            block_arr[1] = True
+        if isInsideBoundary(head['y'], head['x'] - 1) and states[head['y'], head['x'] - 1] == 1:
+            block_arr[2] = True
+        if isInsideBoundary(head['y'], head['x'] + 1) and states[head['y'], head['x'] + 1] == 1:
+            block_arr[3] = True
+
+        #
+        up_ratio = 1
+        down_ratio = 1
+        left_ratio = 1
+        right_ratio = 1
+        if not head['y'] == h - 1:
+            up_ratio = np.sum(states[head['y'] + 1 : h, :] == 1) / (w * (h - head['y'] - 1))
+        if not head['y'] == 0:
+            down_ratio = np.sum(states[0 : head['y'] - 1, :] == 1) / (w * head['y'])
+        if not head['x'] == 0:
+            left_ratio = np.sum(states[:, 0 : head['x'] - 1] == 1) / (head['x'] * h)
+        if not head['x'] == w - 1:
+            right_ratio = np.sum(states[:, head['x'] + 1 : w] == 1) / ((w - head['x'] - 1) * h)
+
+        is_dying = 0 if data['you']['health'] > self.health_threshold else 1
+
+        up_food = 1 if np.sum(states[head['y'] + 1 : h, :] == 2) > 0 else 0
+        down_food = 1 if np.sum(states[0 : head['y'] - 1, :] == 2) > 0 else 0
+        left_food = 1 if np.sum(states[:, 0 : head['x'] - 1] == 2) > 0 else 0
+        right_food = 1 if np.sum(states[:, head['x'] + 1 : w] == 2) > 0 else 0
+
+        state_score = round(up_ratio * 10 - 0.5) + round(down_ratio * 10 - 0.5) * pow(10, 1) + round(left_ratio * 10 - 0.5) * pow(10, 2) + round(right_ratio * 10 - 0.5) * pow(10, 3)
+        state_score += up_food * pow(10, 3) * pow(2, 1) + down_food * pow(10, 3) * pow(2, 2) + left_food * pow(10, 3) * pow(2, 3)  + right_food * pow(10, 3) * pow(2, 4)
+        state_score += is_dying * pow(10, 3) * pow(2, 5)
+
+        return state_score, block_arr
 
     def __construct_remember_state(self, data):
         rem = {}
@@ -167,7 +202,7 @@ class Battlesnake(object):
         rem = self.__construct_remember_state(data)
         r = Battlesnake.STEP_REWARD
         if rem['health'] == 0:
-            r = -100.0
+            r = -10000.0
         elif 'health' in self.prev_state and rem['health'] >= self.prev_state['health']:
             r = 100.0
         return r
