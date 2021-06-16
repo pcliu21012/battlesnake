@@ -74,6 +74,7 @@ class QLearner(object):
     def load(self, fname):
         # Load Q table
         self.Q.load(fname)
+        print("Loading QTable from {}".format(fname))
 
     def dump(self, fname):
         # dump Q table as json string
