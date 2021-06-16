@@ -77,7 +77,7 @@ class Battlesnake(object):
         # cherrypy.request.json contains information about the game that's about to be played.
         data = cherrypy.request.json
 
-        state, block_arr = util.discretize_entire_directional_area(data, self.config['num_actions'], self.health_threshold)
+        state, block_arr = util.discretize_narrow_directional_area(data, self.config['num_actions'], self.health_threshold)
         _ = self.learner.querysetstate(state, block_arr)
 
         print("START")
@@ -98,7 +98,7 @@ class Battlesnake(object):
 
         # Construct states and query learner
         r = self.__calc_reward(data)
-        state, block_arr = util.discretize_entire_directional_area(data, self.config['num_actions'], self.health_threshold)
+        state, block_arr = util.discretize_narrow_directional_area(data, self.config['num_actions'], self.health_threshold)
         if self.is_learning_mode:
             action = self.learner.query(state, r, block_arr)
         else:
@@ -118,7 +118,7 @@ class Battlesnake(object):
 
         # Punish or reward when game end
         r = self.__calc_reward(data)
-        state, block_arr = util.discretize_entire_directional_area(data, self.config['num_actions'], self.health_threshold)
+        state, block_arr = util.discretize_narrow_directional_area(data, self.config['num_actions'], self.health_threshold)
         if self.is_learning_mode:
             _ = self.learner.query(state, r, block_arr)
 
