@@ -137,25 +137,30 @@ class Battlesnake(object):
         w = board['width']
         states = np.zeros((h, w))
 
+        def isInsideBoundary(y, x):
+            if y < 0 or x < 0 or y >= h or x >= w:
+                return False
+            return True
+
         if 'snakes' in board:
             for snake in board['snakes']:
                 for pos in snake['body']:
-                    states[pos['y'], pos['x']] = 1
+                    if isInsideBoundary(pos['y'], pos['x']):
+                        states[pos['y'], pos['x']] = 1
         if 'food' in board:
             for pos in board['food']:
                 states[pos['y'], pos['x']] = 2
         you = data['you']
         for pos in you['body']:
-            states[pos['y'], pos['x']] = 1
+            if isInsideBoundary(pos['y'], pos['x']):
+                states[pos['y'], pos['x']] = 1
         head = you['head']
-        states[head['y'], head['x']] = 3
+        if isInsideBoundary(head['y'], head['x']):
+            states[head['y'], head['x']] = 3
 
         # Block_arr inidicates if there is an immediate block at earch direction. ["up", "down", "left", "right"]
         block_arr = np.zeros(self.config['num_actions'], dtype=bool)
-        def isInsideBoundary(y, x):
-            if y < 0 or x < 0 or y >= h or x >= w:
-                return False
-            return True
+
         if isInsideBoundary(head['y'] + 1, head['x']) and states[head['y'] + 1, head['x']] == 1:
             block_arr[0] = True
         if isInsideBoundary(head['y'] - 1, head['x']) and states[head['y'] - 1, head['x']] == 1:
