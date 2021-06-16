@@ -6,6 +6,8 @@ import cherrypy
 import QLearner as ql
 import numpy as np
 
+import util
+
 """
 This is a simple Battlesnake server written in Python.
 For instructions see https://github.com/BattlesnakeOfficial/starter-snake-python/README.md
@@ -23,10 +25,10 @@ class Battlesnake(object):
         # Load learner parameters from learner.json
         with open('learner.json') as f:
             self.config = json.load(f)
-        
+
         if 'is_learning_mode' in self.config:
             self.is_learning_mode = self.config['is_learning_mode']
-        
+
         if 'health_threshold' in self.config:
             self.health_threshold = self.config['health_threshold']
 
@@ -87,14 +89,14 @@ class Battlesnake(object):
         # Construct states and query learner
         game_id = self.__unique_id(data)
         if game_id not in self.prev_state:
-            state, block_arr = self.__discretize(data)
+            state, block_arr = util.discretize_entire_directional_area(data, self.config['num_actions'], self.health_threshold)
             action = self.learner.querysetstate(state, block_arr, game_id)
         else:
             # Calculate reward based on previous state
             prev_s = self.prev_state[game_id]
             r = self.__calc_reward(data, prev_s)
 
-            state, block_arr = self.__discretize(data)
+            state, block_arr = util.discretize_entire_directional_area(data, self.config['num_actions'], self.health_threshold)
             if self.is_learning_mode:
                 action = self.learner.query(state, r, block_arr, game_id)
             else:
@@ -120,7 +122,7 @@ class Battlesnake(object):
             # Calculate reward based on previous state
             prev_s = self.prev_state[game_id]
             r = self.__calc_reward(data, prev_s)
-            state, block_arr = self.__discretize(data)
+            state, block_arr = util.discretize_entire_directional_area(data, self.config['num_actions'], self.health_threshold)
             _ = self.learner.query(state, r, block_arr, game_id)
             self.prev_state.pop(game_id, None)
             # print(self.learner.dump(self.config['Q']))
@@ -149,79 +151,6 @@ class Battlesnake(object):
         game_id = data['game']['id']
         you_id = data['you']['id']
         return f"{game_id}:{you_id}"
-
-    def __discretize(self, data):
-        # 0 = empty
-        # 1 = barrier
-        # 2 = food
-        # 3 = head
-        board = data['board']
-        h = board['height']
-        w = board['width']
-        states = np.zeros((h, w))
-
-        def isInsideBoundary(y, x):
-            if y < 0 or x < 0 or y >= h or x >= w:
-                return False
-            return True
-
-        if 'snakes' in board:
-            for snake in board['snakes']:
-                for pos in snake['body']:
-                    if isInsideBoundary(pos['y'], pos['x']):
-                        states[pos['y'], pos['x']] = 1
-        if 'food' in board:
-            for pos in board['food']:
-                states[pos['y'], pos['x']] = 2
-        you = data['you']
-        for pos in you['body']:
-            if isInsideBoundary(pos['y'], pos['x']):
-                states[pos['y'], pos['x']] = 1
-        head = you['head']
-        if isInsideBoundary(head['y'], head['x']):
-            states[head['y'], head['x']] = 3
-
-        # Block_arr inidicates if there is an immediate block at earch direction. ["up", "down", "left", "right"]
-        # This is extra constraint information, not part fo the state
-        block_arr = np.zeros(self.config['num_actions'], dtype=bool)
-
-        if (isInsideBoundary(head['y'] + 1, head['x']) and states[head['y'] + 1, head['x']] == 1) or not isInsideBoundary(head['y'] + 1, head['x']):
-            block_arr[0] = True
-        if (isInsideBoundary(head['y'] - 1, head['x']) and states[head['y'] - 1, head['x']] == 1) or not isInsideBoundary(head['y'] - 1, head['x']):
-            block_arr[1] = True
-        if (isInsideBoundary(head['y'], head['x'] - 1) and states[head['y'], head['x'] - 1] == 1) or not isInsideBoundary(head['y'], head['x'] - 1):
-            block_arr[2] = True
-        if (isInsideBoundary(head['y'], head['x'] + 1) and states[head['y'], head['x'] + 1] == 1) or not isInsideBoundary(head['y'], head['x'] + 1):
-            block_arr[3] = True
-
-        # Barrier ration for four directions (0-9)
-        up_ratio = 1
-        down_ratio = 1
-        left_ratio = 1
-        right_ratio = 1
-        if not head['y'] == h - 1:
-            up_ratio = np.sum(states[head['y'] + 1 : h, :] == 1) / (w * (h - head['y'] - 1))
-        if not head['y'] == 0:
-            down_ratio = np.sum(states[0 : head['y'] - 1, :] == 1) / (w * head['y'])
-        if not head['x'] == 0:
-            left_ratio = np.sum(states[:, 0 : head['x'] - 1] == 1) / (head['x'] * h)
-        if not head['x'] == w - 1:
-            right_ratio = np.sum(states[:, head['x'] + 1 : w] == 1) / ((w - head['x'] - 1) * h)
-
-        # Food signal for four direction (0-1)
-        up_food = 1 if np.sum(states[head['y'] + 1 : h, :] == 2) > 0 else 0
-        down_food = 1 if np.sum(states[0 : head['y'] - 1, :] == 2) > 0 else 0
-        left_food = 1 if np.sum(states[:, 0 : head['x'] - 1] == 2) > 0 else 0
-        right_food = 1 if np.sum(states[:, head['x'] + 1 : w] == 2) > 0 else 0
-
-        # Low health indicator (0-1)
-        is_dying = 0 if data['you']['health'] > self.health_threshold else 1
-
-        state_score = round(up_ratio * 10 - 0.5) + round(down_ratio * 10 - 0.5) * pow(10, 1) + round(left_ratio * 10 - 0.5) * pow(10, 2) + round(right_ratio * 10 - 0.5) * pow(10, 3)
-        state_score += up_food * pow(10, 3) * pow(2, 1) + down_food * pow(10, 3) * pow(2, 2) + left_food * pow(10, 3) * pow(2, 3)  + right_food * pow(10, 3) * pow(2, 4)
-        state_score += is_dying * pow(10, 3) * pow(2, 5)
-
-        return state_score, block_arr
 
     def __construct_remember_state(self, data):
         return {
