@@ -44,7 +44,8 @@ class Battlesnake(object):
             verbose=self.config['verbose'],
         )
         if 'Q' in self.config:
-            self.learner.load(self.config['Q'])
+            if os.path.isfile(self.config['Q']):
+                self.learner.load(self.config['Q'])
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
