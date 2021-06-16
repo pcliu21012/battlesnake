@@ -1,5 +1,5 @@
 {
-    "num_states": 121,
+    "num_states": 320000,
     "num_actions": 4,
     "alpha": 0.2,
     "gamma": 0.9,
@@ -7,5 +7,7 @@
     "radr": 0.999,
     "dyna": 0,
     "verbose": false,
-    "is_learning_mode": true
+    "is_learning_mode": true,
+    "health_threshold": 30,
+    "Q": "qtable_v1.json"
 }
