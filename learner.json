@@ -3,11 +3,17 @@
     "num_actions": 4,
     "alpha": 0.2,
     "gamma": 0.9,
-    "rar": 0.98,
+    "rar": 0.5,
     "radr": 0.999,
     "dyna": 0,
     "verbose": false,
     "is_learning_mode": true,
     "health_threshold": 30,
+    "reward": {
+        "default": -1.0,
+        "low_health": -10.0,
+        "die": -10000.0,
+        "eat_food": 100.0
+    },
     "Q": "qtable.json"
 }

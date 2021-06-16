@@ -13,9 +13,6 @@ This is a simple Battlesnake server written in Python.
 For instructions see https://github.com/BattlesnakeOfficial/starter-snake-python/README.md
 """
 class Battlesnake(object):
-    # Global variable
-    STEP_REWARD = -1.0
-
     def __init__(self):
         # Runtime default settings
         self.is_learning_mode = True
@@ -161,11 +158,14 @@ class Battlesnake(object):
 
     def __calc_reward(self, data, prev_s):
         curr_s = self.__construct_remember_state(data)
-        r = Battlesnake.STEP_REWARD
+        rewrad_conf = self.config['reward']
+        r = rewrad_conf['default']
         if curr_s['health'] == 0:
-            r = -10000.0
+            r = rewrad_conf['die']
         elif curr_s['health'] >= prev_s['health']:
-            r = 100.0
+            r = rewrad_conf['eat_food']
+        elif prev_s['health'] <= self.health_threshold:
+            r = rewrad_conf['low_health']
         return r
 
 if __name__ == "__main__":
