@@ -161,13 +161,13 @@ class Battlesnake(object):
         # Block_arr inidicates if there is an immediate block at earch direction. ["up", "down", "left", "right"]
         block_arr = np.zeros(self.config['num_actions'], dtype=bool)
 
-        if isInsideBoundary(head['y'] + 1, head['x']) and states[head['y'] + 1, head['x']] == 1:
+        if (isInsideBoundary(head['y'] + 1, head['x']) and states[head['y'] + 1, head['x']] == 1) or not isInsideBoundary(head['y'] + 1, head['x']):
             block_arr[0] = True
-        if isInsideBoundary(head['y'] - 1, head['x']) and states[head['y'] - 1, head['x']] == 1:
+        if (isInsideBoundary(head['y'] - 1, head['x']) and states[head['y'] - 1, head['x']] == 1) or not isInsideBoundary(head['y'] - 1, head['x']):
             block_arr[1] = True
-        if isInsideBoundary(head['y'], head['x'] - 1) and states[head['y'], head['x'] - 1] == 1:
+        if (isInsideBoundary(head['y'], head['x'] - 1) and states[head['y'], head['x'] - 1] == 1) or not isInsideBoundary(head['y'], head['x'] - 1):
             block_arr[2] = True
-        if isInsideBoundary(head['y'], head['x'] + 1) and states[head['y'], head['x'] + 1] == 1:
+        if (isInsideBoundary(head['y'], head['x'] + 1) and states[head['y'], head['x'] + 1] == 1) or not isInsideBoundary(head['y'], head['x'] + 1):
             block_arr[3] = True
 
         #
