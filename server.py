@@ -140,6 +140,9 @@ class Battlesnake(object):
         self.health_threshold.pop(game_id, None)
         self.learner.end(game_id)
 
+        if self.runtime_config.dump_at_end():
+            self.dump()
+
         print("END")
         return "ok"
 
