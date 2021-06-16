@@ -63,9 +63,9 @@ class QLearner(object):
         # Load Q table
         self.Q.load(fname)
 
-    def dump(self):
+    def dump(self, fname):
         # dump Q table as json string
-        return self.Q.dump()
+        return self.Q.dump(fname)
 
     def querysetstate(self, s, block_arr):
         """

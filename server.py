@@ -17,16 +17,20 @@ class Battlesnake(object):
     STEP_REWARD = -1.0
 
     def __init__(self):
-        # Runtime settings
+        # Runtime default settings
         self.is_learning_mode = True
-        self.prev_state = {}
         self.health_threshold = 30
+        self.prev_state = {}
 
         # Load learner parameters from learner.json
         with open('learner.json') as f:
             self.config = json.load(f)
-            if 'is_learning_mode' in self.config:
-                self.is_learning_mode = self.config['is_learning_mode']
+
+        if 'is_learning_mode' in self.config:
+            self.is_learning_mode = self.config['is_learning_mode']
+
+        if 'health_threshold' in self.config:
+            self.health_threshold = self.config['health_threshold']
 
         # Initialize the QLearner
         self.learner = ql.QLearner(
@@ -120,10 +124,9 @@ class Battlesnake(object):
 
         print("END")
 
-        # Record Q table
-        # print("Learner Q table:")
-        print(self.learner.dump())
-        # print()
+        # Record Q table in learning mode
+        if self.is_learning_mode:
+          print(self.learner.dump(self.config['Q']))
 
         return "ok"
 

@@ -49,8 +49,7 @@ class QTableMap(object):
             self.Q = data
             # print(self.Q)
 
-    def dump(self):
-        fname = 'qtable.json'
+    def dump(self, fname='qtable.json'):
         with open(fname, 'w') as f:
             json.dump(self.Q, f, cls=NumpyEncoder)
         return "Writing QTable into {}".format(fname)
@@ -84,8 +83,7 @@ class QTableArray(object):
             data = json.load(f)
             self.Q = np.array(data)
 
-    def dump(self):
-        fname = 'qtable.json'
+    def dump(self, fname='qtable.json'):
         with open(fname, 'w') as f:
             json.dump(self.Q, f, cls=NumpyEncoder)
         return "Writing QTable into {}".format(fname)
