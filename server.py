@@ -10,7 +10,6 @@ import numpy as np
 This is a simple Battlesnake server written in Python.
 For instructions see https://github.com/BattlesnakeOfficial/starter-snake-python/README.md
 """
-
 class Battlesnake(object):
     # Global variable
     STEP_REWARD = -1.0
