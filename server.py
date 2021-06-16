@@ -1,12 +1,26 @@
 import os
 import random
 import json
-
 import cherrypy
-import QLearner as ql
-import numpy as np
-
 import util
+import config
+
+import QLearner as ql
+
+
+class RememberState(object):
+    def __init__(self, data):
+        self.state = {
+            'health': data['you']['health'],
+            'length': data['you']['length'],
+        }
+
+    def health(self):
+        return self.state['health']
+
+    def length(self):
+        return self.state['length']
+
 
 """
 This is a simple Battlesnake server written in Python.
@@ -15,34 +29,32 @@ For instructions see https://github.com/BattlesnakeOfficial/starter-snake-python
 class Battlesnake(object):
     def __init__(self):
         # Runtime default settings
-        self.is_learning_mode = True
-        self.health_threshold = 30
+        self.health_threshold = {}
         self.prev_state = {}
 
         # Load learner parameters from learner.json
         with open('learner.json') as f:
-            self.config = json.load(f)
+            raw_config = json.load(f)
+            self.config = config.LearnerConfig(raw_config)
+            self.runtime_config = config.RuntimeConfig(raw_config)
+            self.reward_config = config.RewardConfig(raw_config)
 
-        if 'is_learning_mode' in self.config:
-            self.is_learning_mode = self.config['is_learning_mode']
-
-        if 'health_threshold' in self.config:
-            self.health_threshold = self.config['health_threshold']
+        self.is_learning_mode = self.runtime_config.is_learning_mode()
 
         # Initialize the QLearner
         self.learner = ql.QLearner(
-            num_states=self.config['num_states'],
-            num_actions=self.config['num_actions'],
-            alpha=self.config['alpha'],
-            gamma=self.config['gamma'],
-            rar=self.config['rar'],
-            radr=self.config['radr'],
-            dyna=self.config['dyna'],
-            verbose=self.config['verbose'],
+            num_states=self.config.num_states(),
+            num_actions=self.config.num_actions(),
+            alpha=self.config.alpha(),
+            gamma=self.config.gamma(),
+            rar=self.config.rar(),
+            radr=self.config.radr(),
+            dyna=self.config.dyna(),
+            verbose=self.config.verbose(),
         )
-        if 'Q' in self.config:
-            if os.path.isfile(self.config['Q']):
-                self.learner.load(self.config['Q'])
+        if self.config.Q():
+            if os.path.isfile(self.config.Q()):
+                self.learner.load(self.config.Q())
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
@@ -68,6 +80,7 @@ class Battlesnake(object):
         # Start the game with initial setup
         game_id = self.__unique_id(data)
         self.learner.start(game_id)
+        self.health_threshold[game_id] = self.runtime_config.health_threshold()
 
         print("START")
         return "ok"
@@ -87,14 +100,13 @@ class Battlesnake(object):
         # Construct states and query learner
         game_id = self.__unique_id(data)
         if game_id not in self.prev_state:
-            state, block_arr = util.discretize_narrow_directional_area(data, self.config['num_actions'], self.health_threshold)
+            state, block_arr = util.discretize_narrow_directional_area(data, self.config.num_actions(), self.health_threshold[game_id])
             action = self.learner.querysetstate(state, block_arr, game_id)
         else:
             # Calculate reward based on previous state
-            prev_s = self.prev_state[game_id]
-            r = self.__calc_reward(data, prev_s)
+            r = self.__calc_reward(data, game_id)
 
-            state, block_arr = util.discretize_narrow_directional_area(data, self.config['num_actions'], self.health_threshold)
+            state, block_arr = util.discretize_narrow_directional_area(data, self.config.num_actions(), self.health_threshold[game_id])
             if self.is_learning_mode:
                 action = self.learner.query(state, r, block_arr, game_id)
             else:
@@ -102,7 +114,7 @@ class Battlesnake(object):
         move = possible_moves[action]
 
         # Memorize previous state
-        self.prev_state[game_id] = self.__construct_remember_state(data)
+        self.prev_state[game_id] = RememberState(data)
 
         print(f"THIS MOVE({game_id}): {move}")
         return {"move": move}
@@ -118,12 +130,14 @@ class Battlesnake(object):
         # Punish or reward when game end in learning mode
         if self.is_learning_mode and game_id in self.prev_state:
             # Calculate reward based on previous state
-            prev_s = self.prev_state[game_id]
-            r = self.__calc_reward(data, prev_s)
-            state, block_arr = util.discretize_narrow_directional_area(data, self.config['num_actions'], self.health_threshold)
+            r = self.__calc_reward(data, game_id)
+            state, block_arr = util.discretize_narrow_directional_area(data, self.config.num_actions(), self.health_threshold[game_id])
             _ = self.learner.query(state, r, block_arr, game_id)
-            self.prev_state.pop(game_id, None)
-            # print(self.learner.dump(self.config['Q']))
+            # print(self.learner.dump(self.config.Q()))
+
+        # Clean up to save memory
+        self.prev_state.pop(game_id, None)
+        self.health_threshold.pop(game_id, None)
         self.learner.end(game_id)
 
         print("END")
@@ -140,7 +154,7 @@ class Battlesnake(object):
     @cherrypy.expose
     def dump(self):
         # This function is called when you want to dump the Q tablel to file
-        print(self.learner.dump(self.config['Q']))
+        print(self.learner.dump(self.config.Q()))
         return "ok"
 
     # Helper methods
@@ -150,22 +164,19 @@ class Battlesnake(object):
         you_id = data['you']['id']
         return f"{game_id}:{you_id}"
 
-    def __construct_remember_state(self, data):
-        return {
-            'health': data['you']['health'],
-            'length': data['you']['length'],
-        }
-
-    def __calc_reward(self, data, prev_s):
-        curr_s = self.__construct_remember_state(data)
-        rewrad_conf = self.config['reward']
-        r = rewrad_conf['default']
-        if curr_s['health'] == 0:
-            r = rewrad_conf['die']
-        elif curr_s['health'] >= prev_s['health']:
-            r = rewrad_conf['eat_food']
-        elif prev_s['health'] <= self.health_threshold:
-            r = rewrad_conf['low_health']
+    def __calc_reward(self, data, game_id):
+        curr_s = RememberState(data)
+        prev_s = self.prev_state[game_id]
+        r = self.reward_config.default()
+        if curr_s.health() == 0:
+            r = self.reward_config.die()
+        elif curr_s.health() >= prev_s.health():
+            r = self.reward_config.eat_food()
+            # After eating food, decay the health threshold
+            health_t_decay = self.runtime_config.health_threshold_decay()
+            self.health_threshold[game_id] *= health_t_decay
+        elif prev_s.health() <= self.health_threshold[game_id]:
+            r = self.reward_config.low_health()
         return r
 
 if __name__ == "__main__":
