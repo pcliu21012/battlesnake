@@ -48,6 +48,7 @@ class FoodStrategy(object):
                 possible_routes = util.calculate_possible_routes(head['y'], head['x'], a, w, h, states)
                 if possible_routes > max_routes:
                     max_routes_dir = a
+                    max_routes = possible_routes
 
         foods = [] # list of tuple
         if 'food' in board:

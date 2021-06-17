@@ -337,9 +337,7 @@ def calculate_possible_routes(head_y, head_x, dirr, w, h, states):
             else:
                 queue.append(near)
                 visited.update({near : pos_count})
-        if len(nears) == 0:
-            # leaf (end point)
-            total_routes = total_routes + pos_count
+            total_routes = max(total_routes, visited[near])
 
     return total_routes
 
