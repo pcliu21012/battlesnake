@@ -100,13 +100,13 @@ class Battlesnake(object):
         # Construct states and query learner
         game_id = self.__unique_id(data)
         if game_id not in self.prev_state:
-            state, block_arr = util.discretize_narrow_directional_area(data, self.config.num_actions(), self.health_threshold[game_id])
+            state, block_arr = util.discretize(data, self.config.num_actions(), self.health_threshold[game_id])
             action = self.learner.querysetstate(state, block_arr, game_id)
         else:
             # Calculate reward based on previous state
             r = self.__calc_reward(data, game_id)
 
-            state, block_arr = util.discretize_narrow_directional_area(data, self.config.num_actions(), self.health_threshold[game_id])
+            state, block_arr = util.discretize(data, self.config.num_actions(), self.health_threshold[game_id])
             if self.is_learning_mode:
                 action = self.learner.query(state, r, block_arr, game_id)
             else:
@@ -131,7 +131,7 @@ class Battlesnake(object):
         if self.is_learning_mode and game_id in self.prev_state:
             # Calculate reward based on previous state
             r = self.__calc_reward(data, game_id)
-            state, block_arr = util.discretize_narrow_directional_area(data, self.config.num_actions(), self.health_threshold[game_id])
+            state, block_arr = util.discretize(data, self.config.num_actions(), self.health_threshold[game_id])
             _ = self.learner.query(state, r, block_arr, game_id)
             # print(self.learner.dump(self.config.Q()))
 
@@ -139,6 +139,9 @@ class Battlesnake(object):
         self.prev_state.pop(game_id, None)
         self.health_threshold.pop(game_id, None)
         self.learner.end(game_id)
+
+        if self.runtime_config.dump_at_end():
+            self.dump()
 
         print("END")
         return "ok"

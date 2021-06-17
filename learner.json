@@ -4,7 +4,7 @@
     "Q": "qtable.json",
     "runtime": {
         "is_learning_mode": true,
-        "dump_at_end": true,
+        "dump_at_end": false,
         "health_threshold": 100,
         "health_threshold_decay": 0.9
     }
