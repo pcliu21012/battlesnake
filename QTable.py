@@ -26,6 +26,7 @@ class QTableMap(object):
         self.num_actions = num_actions
 
     def get(self, state, action=None):
+        state = str(state)
         # print("{}, {}".format(state, action))
         if state in self.Q:
             if action is not None:
@@ -39,6 +40,7 @@ class QTableMap(object):
                 return np.zeros(self.num_actions)
 
     def update(self, state, action, val):
+        state = str(state)
         if state not in self.Q:
             self.Q[state] = np.zeros(self.num_actions)
         self.Q[state][action] = val
