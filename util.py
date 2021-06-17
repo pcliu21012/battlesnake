@@ -114,8 +114,8 @@ def discretize_entire_directional_area(data, num_actions, health_threshold):
     is_dying = 0 if you['health'] > health_threshold else 1
 
     state_score = round(up_ratio * 10 - 0.5) + round(down_ratio * 10 - 0.5) * pow(10, 1) + round(left_ratio * 10 - 0.5) * pow(10, 2) + round(right_ratio * 10 - 0.5) * pow(10, 3)
-    state_score += up_food * pow(10, 4) * pow(2, 1) + down_food * pow(10, 4) * pow(2, 2) + left_food * pow(10, 4) * pow(2, 3)  + right_food * pow(10, 4) * pow(2, 4)
-    state_score += is_dying * pow(10, 4) * pow(2, 5)
+    state_score += up_food * pow(10, 4) + down_food * pow(10, 4) * pow(2, 1) + left_food * pow(10, 4) * pow(2, 2)  + right_food * pow(10, 4) * pow(2, 3)
+    state_score += is_dying * pow(10, 4) * pow(2, 4)
 
     return state_score, block_arr
 
