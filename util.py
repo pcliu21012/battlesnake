@@ -3,6 +3,22 @@ import numpy as np
 def discretize(data, states, num_actions):
     return discretize_possible_routes(data, states, num_actions)
 
+def is_die(data):
+    board = data['board']
+    h = board['height']
+    w = board['width']
+    you = data['you']
+    head = you['head']
+    if not isInsideBoundary(head['y'], head['x'], w, h):
+        return True
+    if 'snakes' in board:
+        for snake in board['snakes']:
+            for pos in snake['body']:
+                if pos['y'] == head['y'] and pos['x'] == head['x']:
+                    return True
+    return False
+
+
 def isInsideBoundary(y, x, w, h):
     if y < 0 or x < 0 or y >= h or x >= w:
         return False
