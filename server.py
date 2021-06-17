@@ -132,7 +132,7 @@ class Battlesnake(object):
         # Punish or reward when game end in learning mode
         if self.is_learning_mode and game_id in self.prev_state:
             # Calculate reward based on previous state
-            r = self.__calc_reward(data, game_id)
+            r = self.__calc_reward(data, game_id, is_end=True)
             state, block_arr = util.discretize(data, self.config.num_actions(), self.health_threshold[game_id])
             _ = self.learner.query(state, r, block_arr, game_id)
             # print(self.learner.dump(self.config.Q()))
@@ -169,11 +169,13 @@ class Battlesnake(object):
         you_id = data['you']['id']
         return f"{game_id}:{you_id}"
 
-    def __calc_reward(self, data, game_id):
+    def __calc_reward(self, data, game_id, is_end=False):
         curr_s = RememberState(data)
         prev_s = self.prev_state[game_id]
         r = self.reward_config.default()
-        if curr_s.health() == 0:
+
+        # Starving to die
+        if curr_s.health() == 0 or (is_end and util.is_die(data)):
             r = self.reward_config.die()
         elif curr_s.health() >= prev_s.health():
             r = self.reward_config.eat_food()
