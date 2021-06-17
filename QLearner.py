@@ -169,6 +169,7 @@ class QLearner(object):
             constraint_arr = np.array(self.Q.get(s_prime))
             constraint_arr[block_arr] = float('-inf')
             action = np.argmax(constraint_arr)
+            print(f"USE QTable: ({constraint_arr})")
         # Decay the random probability
         if decay:
             self.rar *= self.radr
