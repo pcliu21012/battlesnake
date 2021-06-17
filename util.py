@@ -49,14 +49,16 @@ def determine_block_array(data, states, num_actions):
     if 'snakes' in board:
         for snake in board['snakes']:
             tail_pos = snake['body'][-1]
+            # Don't chase our tail if length too short
+            if snake['id'] == you['id'] and snake['length'] <= 3:
+                continue
+            # Don't chase tail if the snake just got a food
+            if snake['health'] == 100:
+                continue
             tail_map["{},{}".format(tail_pos['y'], tail_pos['x'])] = True
 
     def is_tail(y, x):
         return "{},{}".format(y, x) in tail_map
-
-    def is_my_tail(y, x):
-        my_tail = you['body'][-1]
-        return y == my_tail['y'] and x == my_tail['x']
 
     direction_pos = (
         (head['y'] + 1, head['x']),
@@ -66,9 +68,7 @@ def determine_block_array(data, states, num_actions):
     )
     for i in range(len(direction_pos)):
         (y, x) = direction_pos[i]
-        if you['length'] <= 3 and is_my_tail(y, x):
-            block_arr[i] = True
-        elif (isInsideBoundary(y, x, w, h) and states[y, x] == 1 and not is_tail(y, x)) or not isInsideBoundary(y, x, w, h):
+        if (isInsideBoundary(y, x, w, h) and states[y, x] == 1 and not is_tail(y, x)) or not isInsideBoundary(y, x, w, h):
             block_arr[i] = True
 
     return block_arr
