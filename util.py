@@ -142,7 +142,7 @@ def discretize_narrow_directional_area(data, num_actions, health_threshold):
 
     block_arr = determine_block_array(data, states, num_actions)
 
-    def helper(h, w, y, x, n, dir):
+    def helper(h, w, y, x, n, dirr):
         '''
         Calculate the top/down/left/right range based on the head position (x, y) and direction
         :param h: Height of the map
@@ -155,8 +155,8 @@ def discretize_narrow_directional_area(data, num_actions, health_threshold):
         :type x: int
         :param n: side length of the n * n area toward given direction
         :type n: int
-        :param dir: index of ["up", "down", "left", "right"]
-        :type dir: int
+        :param dirr: index of ["up", "down", "left", "right"]
+        :type dirr: int
         :return: (y1, y2, x1, x2) are the range of index that is inside the map. (y2, x2) are excluding end point of the range.
         : b is the number of block that is out side the map boundary.
         :rtype: int
@@ -337,7 +337,7 @@ def calculate_possible_routes(head_y, head_x, dirr, w, h, states):
             else:
                 queue.append(near)
                 visited.update({near : pos_count})
-        if len(nears):
+        if len(nears) == 0:
             # leaf (end point)
             total_routes = total_routes + pos_count
 
