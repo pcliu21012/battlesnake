@@ -35,14 +35,14 @@ class QTableMap(object):
                 return self.Q[state]
         else:
             if action is not None:
-                return 0.0
+                return -1.0
             else:
-                return np.zeros(self.num_actions)
+                return np.ones(self.num_actions) * -1.0
 
     def update(self, state, action, val):
         state = str(state)
         if state not in self.Q:
-            self.Q[state] = np.zeros(self.num_actions)
+            self.Q[state] = np.ones(self.num_actions) * -1.0
         self.Q[state][action] = val
 
     def load(self, fname):
@@ -69,7 +69,7 @@ class QTableArray(object):
         """
         Constructor method
         """
-        self.Q = np.zeros((num_states, num_actions))
+        self.Q = np.ones((num_states, num_actions)) * -1.0
 
     def get(self, state, action=None):
         if action is not None:
