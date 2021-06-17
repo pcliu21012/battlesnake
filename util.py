@@ -49,6 +49,12 @@ def determine_block_array(data, states, num_actions):
     if 'snakes' in board:
         for snake in board['snakes']:
             tail_pos = snake['body'][-1]
+            # Don't chase our tail if length too short
+            if snake['id'] == you['id'] and snake['length'] <= 3:
+                continue
+            # Don't chase tail if the snake just got a food
+            if snake['health'] == 100:
+                continue
             tail_map["{},{}".format(tail_pos['y'], tail_pos['x'])] = True
 
     def is_tail(y, x):
