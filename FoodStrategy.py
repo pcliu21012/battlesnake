@@ -43,11 +43,11 @@ class FoodStrategy(object):
         # Find the non-block direction which will have the maximum routes
         max_routes_dir = 0
         max_routes = -1
-        for dir in range(self.num_actions):
-            if not block_arr[dir]:
-                possible_routes = util.calculate_possible_routes(head['y'], head['x'], dir, w, h, states)
+        for a in range(self.num_actions):
+            if not block_arr[a]:
+                possible_routes = util.calculate_possible_routes(head['y'], head['x'], a, w, h, states)
                 if possible_routes > max_routes:
-                    max_routes_dir = dir
+                    max_routes_dir = a
 
         foods = [] # list of tuple
         if 'food' in board:

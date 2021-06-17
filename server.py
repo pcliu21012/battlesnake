@@ -1,9 +1,6 @@
 import os
-import random
 import json
 import cherrypy
-import util
-import config
 
 import QLearnerStrategy as qs
 import FoodStrategy as fs

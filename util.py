@@ -162,19 +162,19 @@ def discretize_narrow_directional_area(data, num_actions, health_threshold):
         :rtype: int
 
         '''
-        if dir == 0:
+        if dirr == 0:
             # up
             h1 = y + 1
             h2 = y + 4
             w1 = w - 1
             w2 = w + 1
-        elif dir == 1:
+        elif dirr == 1:
             # down
             h1 = y - 4
             h2 = y - 1
             w1 = w - 1
             w2 = w + 1
-        elif dir == 2:
+        elif dirr == 2:
             # left
             h1 = y - 1
             h2 = y + 1
@@ -280,15 +280,15 @@ def discretize_possible_routes(data, num_actions, health_threshold):
 
     return state_score, block_arr
 
-def calculate_possible_routes(head_y, head_x, dir, w, h, states):
+def calculate_possible_routes(head_y, head_x, dirr, w, h, states):
     '''
     Calculate the number of possible routes to the boundary (or blocks) based on the head position (x, y) and direction
     :param y: y position of sneak head
     :type y: int
     :param x: x position of sneak head
     :type x: int
-    :param dir: index of ["up", "down", "left", "right"]
-    :type dir: int
+    :param dirr: index of ["up", "down", "left", "right"]
+    :type dirr: int
     :return: the number of routes
     :rtype: int
 
@@ -305,13 +305,13 @@ def calculate_possible_routes(head_y, head_x, dir, w, h, states):
             possible_nears.append((pos[0], pos[1] + 1))
         return possible_nears
 
-    if dir == 0:
+    if dirr == 0:
         root_y = head_y + 1
         root_x = head_x
-    elif dir == 1:
+    elif dirr == 1:
         root_y = head_y - 1
         root_x = head_x
-    elif dir == 2:
+    elif dirr == 2:
         root_y = head_y
         root_x = head_x - 1
     else:
