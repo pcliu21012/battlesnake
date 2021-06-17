@@ -293,7 +293,7 @@ def discretize_possible_routes(data, num_actions, health_threshold):
         queue.append(root)
         visited.update({root : 1})
         while len(queue) != 0:
-            pos = queue.pop()
+            pos = queue.pop(0)
             pos_count = visited[pos]
             nears = getAvailableNext(pos)
             for near in nears:
