@@ -16,6 +16,9 @@ def is_die(data):
             for pos in snake['body']:
                 if pos['y'] == head['y'] and pos['x'] == head['x']:
                     return True
+    for pos in you['body']:
+        if pos['y'] == head['y'] and pos['x'] == head['x']:
+            return True
     return False
 
 
