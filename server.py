@@ -59,7 +59,7 @@ class Battlesnake(object):
         # move = self.qlearnerStrategy.move(data)
         move = self.foodStrategy.move(data)
 
-        # print(f"THIS TURN({data['turn']})")
+        print(f"THIS TURN({data['turn']}) MOVE({move})")
 
         return {"move": move}
 
