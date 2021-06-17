@@ -275,7 +275,7 @@ def discretize_possible_routes(data, num_actions, health_threshold):
             root_y = head_y
             root_x = head_x + 1
 
-        if not isInsideBoundary(root_y, root_x, w, h ) and not states[root_y, root_x] == 1:
+        if not isInsideBoundary(root_y, root_x, w, h ) or not states[root_y, root_x] == 1:
             return 0
 
         total_routes = 0
