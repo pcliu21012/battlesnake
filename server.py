@@ -116,7 +116,9 @@ class Battlesnake(object):
         # Memorize previous state
         self.prev_state[game_id] = RememberState(data)
 
+        print(f"THIS TURN({data['turn']})")
         print(f"THIS MOVE({game_id}): {move}")
+        print(f"THIS STATE({state})")
         return {"move": move}
 
     @cherrypy.expose

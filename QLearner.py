@@ -164,6 +164,7 @@ class QLearner(object):
             availables = np.invert(block_arr)
             available_actions = np.array(range(self.num_actions))[availables]
             action = rand.choice(available_actions)
+            print(f"USE RANDOM: ({s_prime})")
         else:
             constraint_arr = np.array(self.Q.get(s_prime))
             constraint_arr[block_arr] = float('-inf')
