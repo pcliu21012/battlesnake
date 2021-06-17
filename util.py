@@ -1,7 +1,7 @@
 import numpy as np
 
-def discretize(data, states, num_actions):
-    return discretize_possible_routes(data, states, num_actions)
+def discretize(data, num_actions, health_threshold):
+    return discretize_possible_routes(data, num_actions, health_threshold)
 
 def is_die(data):
     board = data['board']
@@ -245,84 +245,21 @@ def discretize_possible_routes(data, num_actions, health_threshold):
 
     block_arr = determine_block_array(data, states, num_actions)
 
-    def helper(head_y, head_x, dir):
-        '''
-        Calculate the number of possible routes to the boundary (or blocks) based on the head position (x, y) and direction
-        :param y: y position of sneak head
-        :type y: int
-        :param x: x position of sneak head
-        :type x: int
-        :param dir: index of ["up", "down", "left", "right"]
-        :type dir: int
-        :return: the number of routes
-        :rtype: int
-
-        '''
-        def getAvailableNext(pos):
-            possible_nears = []
-            if isInsideBoundary(pos[0] + 1, pos[1], w, h) and states[pos[0] + 1, pos[1]] not in (1, 3):
-                possible_nears.append((pos[0] + 1, pos[1]))
-            if isInsideBoundary(pos[0] - 1, pos[1], w, h) and states[pos[0] - 1, pos[1]] not in (1, 3):
-                possible_nears.append((pos[0] - 1, pos[1]))
-            if isInsideBoundary(pos[0], pos[1] - 1, w, h) and states[pos[0], pos[1] - 1] not in (1, 3):
-                possible_nears.append((pos[0], pos[1] - 1))
-            if isInsideBoundary(pos[0], pos[1] + 1, w, h) and states[pos[0], pos[1] + 1] not in (1, 3):
-                possible_nears.append((pos[0], pos[1] + 1))
-            return possible_nears
-
-        if dir == 0:
-            root_y = head_y + 1
-            root_x = head_x
-        elif dir == 1:
-            root_y = head_y - 1
-            root_x = head_x
-        elif dir == 2:
-            root_y = head_y
-            root_x = head_x - 1
-        else:
-            root_y = head_y
-            root_x = head_x + 1
-
-        if not isInsideBoundary(root_y, root_x, w, h ) or states[root_y, root_x] == 1:
-            return 0
-
-        total_routes = 0
-        queue = [] # list of position
-        visited = {} # {position : count}
-        root = (root_y, root_x)
-        queue.append(root)
-        visited.update({root : 1})
-        while len(queue) != 0:
-            pos = queue.pop()
-            pos_count = visited[pos]
-            nears = getAvailableNext(pos)
-            for near in nears:
-                if near in visited:
-                    visited.update({near : visited[near] + pos_count})
-                else:
-                    queue.append(near)
-                    visited.update({near : pos_count})
-            if len(nears):
-                # leaf (end point)
-                total_routes = total_routes + pos_count
-
-        return total_routes
-
     '''
     Ratio of available blocks in the 3 * 3 area toward of each direction.
     Area outside of boundary counts as block.
     '''
     # up
-    up_routes = helper(head['y'], head['x'], 0)
+    up_routes = calculate_possible_routes(head['y'], head['x'], 0, w, h, states)
 
     # down
-    down_routes = helper(head['y'], head['x'], 1)
+    down_routes = calculate_possible_routes(head['y'], head['x'], 1, w, h, states)
 
     # left
-    left_routes = helper(head['y'], head['x'], 2)
+    left_routes = calculate_possible_routes(head['y'], head['x'], 2, w, h, states)
 
     # right
-    right_routes = helper(head['y'], head['x'], 3)
+    right_routes = calculate_possible_routes(head['y'], head['x'], 3, w, h, states)
 
     sum_routes = up_routes + down_routes + left_routes + right_routes + 1
     up_ratio = up_routes / sum_routes
@@ -342,3 +279,73 @@ def discretize_possible_routes(data, num_actions, health_threshold):
     state_score += is_dying * pow(10, 4) * pow(2, 5)
 
     return state_score, block_arr
+
+def calculate_possible_routes(head_y, head_x, dir, w, h, states):
+    '''
+    Calculate the number of possible routes to the boundary (or blocks) based on the head position (x, y) and direction
+    :param y: y position of sneak head
+    :type y: int
+    :param x: x position of sneak head
+    :type x: int
+    :param dir: index of ["up", "down", "left", "right"]
+    :type dir: int
+    :return: the number of routes
+    :rtype: int
+
+    '''
+    def getAvailableNext(pos):
+        possible_nears = []
+        if isInsideBoundary(pos[0] + 1, pos[1], w, h) and states[pos[0] + 1, pos[1]] not in (1, 3):
+            possible_nears.append((pos[0] + 1, pos[1]))
+        if isInsideBoundary(pos[0] - 1, pos[1], w, h) and states[pos[0] - 1, pos[1]] not in (1, 3):
+            possible_nears.append((pos[0] - 1, pos[1]))
+        if isInsideBoundary(pos[0], pos[1] - 1, w, h) and states[pos[0], pos[1] - 1] not in (1, 3):
+            possible_nears.append((pos[0], pos[1] - 1))
+        if isInsideBoundary(pos[0], pos[1] + 1, w, h) and states[pos[0], pos[1] + 1] not in (1, 3):
+            possible_nears.append((pos[0], pos[1] + 1))
+        return possible_nears
+
+    if dir == 0:
+        root_y = head_y + 1
+        root_x = head_x
+    elif dir == 1:
+        root_y = head_y - 1
+        root_x = head_x
+    elif dir == 2:
+        root_y = head_y
+        root_x = head_x - 1
+    else:
+        root_y = head_y
+        root_x = head_x + 1
+
+    if not isInsideBoundary(root_y, root_x, w, h ) or states[root_y, root_x] == 1:
+        return 0
+
+    total_routes = 0
+    queue = [] # list of position
+    visited = {} # {position : count}
+    root = (root_y, root_x)
+    queue.append(root)
+    visited.update({root : 1})
+    while len(queue) != 0:
+        pos = queue.pop(0)
+        pos_count = visited[pos]
+        nears = getAvailableNext(pos)
+        for near in nears:
+            if near in visited:
+                visited.update({near : visited[near] + pos_count})
+            else:
+                queue.append(near)
+                visited.update({near : pos_count})
+        if len(nears):
+            # leaf (end point)
+            total_routes = total_routes + pos_count
+
+    return total_routes
+
+# Helper methods
+def unique_id(data):
+    # concat game_id with you_id
+    game_id = data['game']['id']
+    you_id = data['you']['id']
+    return f"{game_id}:{you_id}"
