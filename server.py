@@ -16,7 +16,7 @@ class Battlesnake(object):
         # Load learner parameters from learner.json
         with open('learner.json') as f:
             self.raw_config = json.load(f)
-        
+
         self.runtime_config = cf.RuntimeConfig(self.raw_config)
         self.qlearnerStrategy = qs.QLearnerStrategy(self.raw_config)
         self.foodStrategy = fs.FoodStrategy(self.raw_config)
