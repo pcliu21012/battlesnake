@@ -1,3 +1,4 @@
+import numpy as np
 class HeadLogic:
     def __init__(self):
         self.small_area_threshold = 11
