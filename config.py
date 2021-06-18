@@ -5,7 +5,7 @@ class LearnerConfig(object):
         self.alpha = config.get('alpha', 0.2)
         self.gamma = config.get('gamma', 0.9)
         self.rar = config.get('rar', 0.5)
-        self.radr = config.get('radr', 0.99)
+        self.radr = config.get('radr', 0.999)
         self.dyna = config.get('dyna', 0)
         self.verbose = config.get('verbose', False)
         self.Q = config.get('Q', None)

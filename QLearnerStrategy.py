@@ -105,13 +105,14 @@ class QLearnerStrategy(object):
         r = self.reward_config.default
 
         # Starving to die
-        if curr_s.health() == 0 or (is_end and util.is_die(data)):
+        if curr_s.health == 0 or (is_end and util.is_die(data)):
+            print("!!!!I'm die!!!!")
             r = self.reward_config.die
-        elif curr_s.health() >= prev_s.health():
+        elif curr_s.health >= prev_s.health:
             r = self.reward_config.eat_food
             # After eating food, decay the health threshold
             health_t_decay = self.runtime_config.health_threshold_decay
             self.health_threshold[game_id] *= health_t_decay
-        elif prev_s.health() <= self.health_threshold[game_id]:
+        elif prev_s.health <= self.health_threshold[game_id]:
             r = self.reward_config.low_health
         return r
