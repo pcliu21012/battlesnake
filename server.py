@@ -5,7 +5,7 @@ import cherrypy
 import config as cf
 import QLearnerStrategy as qs
 import FoodStrategy as fs
-
+import HeadStrategy as hs
 
 """
 This is a simple Battlesnake server written in Python.
@@ -20,6 +20,7 @@ class Battlesnake(object):
         self.runtime_config = cf.RuntimeConfig(self.raw_config)
         self.qlearnerStrategy = qs.QLearnerStrategy(self.raw_config)
         self.foodStrategy = fs.FoodStrategy(self.raw_config)
+        self.headStrategy = hs.HeadStrategy(self.raw_config)
 
     @cherrypy.expose
     @cherrypy.tools.json_out()
@@ -56,23 +57,27 @@ class Battlesnake(object):
         # Valid moves are "up", "down", "left", or "right".
         data = cherrypy.request.json
 
-        def is_food_strategy_mode():
-            board = data['board']
-            my_id = data['you']['id']
-            max_other_length = 0
-            if 'snakes' in board:
-                for snake in board['snakes']:
-                    if not snake['id'] == my_id:
-                        max_other_length = max(max_other_length, len(snake['body']))
+        # HeadStrategy first
+        move = self.headStrategy.move(data)
+        if move is None:
+            def is_food_strategy_mode():
+                board = data['board']
+                my_id = data['you']['id']
+                max_other_length = 0
+                if 'snakes' in board:
+                    for snake in board['snakes']:
+                        if not snake['id'] == my_id:
+                            max_other_length = max(max_other_length, len(snake['body']))
+                return len(data['you']['body']) < max_other_length + self.runtime_config.is_food_strategy_threshold
 
-            return len(data['you']['body']) < max_other_length + self.runtime_config.is_food_strategy_threshold
-
-        if is_food_strategy_mode():
-            mode = "FOOD"
-            move = self.foodStrategy.move(data)
+            if is_food_strategy_mode():
+                mode = "FOOD"
+                move = self.foodStrategy.move(data)
+            else:
+                mode = "LEARN"
+                move = self.qlearnerStrategy.move(data)
         else:
-            mode = "LEARN"
-            move = self.qlearnerStrategy.move(data)
+            mode = "HEAD"
 
         print(f"THIS TURN({data['turn']}) <{mode}> MOVE({move})")
 

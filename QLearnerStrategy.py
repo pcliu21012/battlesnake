@@ -50,7 +50,6 @@ class QLearnerStrategy(object):
 
         # Choose a random direction to move in
         possible_moves = ["up", "down", "left", "right"]
-        #move = random.choice(possible_moves)
 
         # Construct states and query learner
         game_id = util.unique_id(data)
