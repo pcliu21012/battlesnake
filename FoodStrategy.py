@@ -7,18 +7,100 @@ class State(object):
         self.direct = direct
         self.parent = parent
 
-
 class FoodStrategy(object):
     def __init__(self, raw_config):
         # Load learner parameters from learner.json
         config = cf.LearnerConfig(raw_config)
         self.num_actions = config.num_actions
+        self.small_area_threshold = 11
 
     def start(self, data):
         pass
 
     def end(self, data):
         pass
+
+    def get_heads_position(self, data):
+        board = data['board']
+        my_id = data['you']['id']
+        heads = []
+        lengths = []
+        if 'snakes' in board:
+            for snake in board['snakes']:
+                if not snake['id'] == my_id:
+                    head = snake['head']
+                    heads.append((head['y'], head['x']))
+                    lengths.append(len(snake['body']))
+        return heads, lengths
+
+    def head_move(self, data, block_arr, routes):
+        other_heads, other_lengths = self.get_heads_position(data)
+        my_head = (data['you']['head']['y'], data['you']['head']['x'])
+        my_length = len(data['you']['body'])
+        move_scores = [0, 0, 0, 0]
+        for head, length in zip(other_heads, other_lengths):
+            if is_diagonal(head, my_head):
+                if length >= my_length:
+                    # dodge
+                    move_scores = self.head_dodge_move(head, my_head, move_scores)
+                else:
+                    # attack
+                    move_scores = self.head_attack_move(head, my_head, move_scores)
+
+        for a in range(self.num_actions):
+            if block_arr[a]:
+                move_scores[a] = 0
+
+        if sum(move_scores) == 0:
+            return None
+
+        move = np.argmax(move_scores)
+        if routes[move] < self.small_area_threshold:
+            return None
+
+        return move
+
+
+    def is_diagonal(self, head, my_head):
+        return abs(head[0] - my_head[0]) == 1 and abs(head[1] - my_head[1]) == 1
+
+    def head_dodge_move(self, head, my_head, move_scores):
+        if head[0] - my_head[0] == 1 and head[1] - my_head[1] == 1:
+            # up right, dodge down or left
+            move_scores[1] += 1
+            move_scores[2] += 1
+        elif head[0] - my_head[0] == 1 and head[1] - my_head[1] == -1:
+            # up left, dodge down or right
+            move_scores[1] += 1
+            move_scores[3] += 1
+        elif head[0] - my_head[0] == -1 and head[1] - my_head[1] == 1:
+            # down right, dodge up or left
+            move_scores[0] += 1
+            move_scores[2] += 1
+        else:
+            # down left, dodge down or right
+            move_scores[0] += 1
+            move_scores[3] += 1
+        return move_scores
+
+    def head_attack_move(self, head, my_head, move_scores):
+        if head[0] - my_head[0] == 1 and head[1] - my_head[1] == 1:
+            # up right, attack up or right
+            move_scores[0] += 1
+            move_scores[3] += 1
+        elif head[0] - my_head[0] == 1 and head[1] - my_head[1] == -1:
+            # up left, attack up or left
+            move_scores[0] += 1
+            move_scores[2] += 1
+        elif head[0] - my_head[0] == -1 and head[1] - my_head[1] == 1:
+            # down right, attack down or right
+            move_scores[1] += 1
+            move_scores[3] += 1
+        else:
+            # down left, attack down or left
+            move_scores[1] += 1
+            move_scores[2] += 1
+        return move_scores
 
     def move(self, data):
         # 0 = empty
@@ -31,6 +113,7 @@ class FoodStrategy(object):
         you = data['you']
         head = you['head']
         states = util.construct_borad(data)
+        routes = [-1, -1, -1, -1]
 
         # Choose a random direction to move in
         possible_moves = ["up", "down", "left", "right"]
@@ -43,9 +126,15 @@ class FoodStrategy(object):
         for a in range(self.num_actions):
             if not block_arr[a]:
                 possible_routes = util.calculate_possible_routes(head['y'], head['x'], a, w, h, states)
+                routes[a] = possible_routes
                 if possible_routes > max_routes:
                     max_routes_dir = a
                     max_routes = possible_routes
+
+        # head move logic
+        ideal_move = self.head_move(data, block_arr, routes)
+        if ideal_move is not None:
+            return possible_moves[ideal_move]
 
         foods = [] # list of tuple
         if 'food' in board:
@@ -65,7 +154,7 @@ class FoodStrategy(object):
             # chose the move with max possible routes
             ideal_move = max_routes_dir
 
-        elif util.calculate_possible_routes(head['y'], head['x'], ideal_move, w, h, states) < 11:
+        elif util.calculate_possible_routes(head['y'], head['x'], ideal_move, w, h, states) < self.small_area_threshold:
             # First move is possible but towards to a small close area
             # chose the move with max possible routes
             ideal_move = max_routes_dir

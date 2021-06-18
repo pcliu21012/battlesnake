@@ -2,6 +2,7 @@ import os
 import json
 import cherrypy
 
+import config as cf
 import QLearnerStrategy as qs
 import FoodStrategy as fs
 
@@ -16,6 +17,7 @@ class Battlesnake(object):
         with open('learner.json') as f:
             self.raw_config = json.load(f)
 
+        self.runtime_config = cf.RuntimeConfig(self.raw_config)
         self.qlearnerStrategy = qs.QLearnerStrategy(self.raw_config)
         self.foodStrategy = fs.FoodStrategy(self.raw_config)
 
@@ -55,8 +57,7 @@ class Battlesnake(object):
         data = cherrypy.request.json
 
         def is_food_strategy_mode():
-            is_food_strategy_threshold = 2
-
+            board = data['board']
             my_id = data['you']['id']
             max_other_length = 0
             if 'snakes' in board:
@@ -64,14 +65,16 @@ class Battlesnake(object):
                     if not snake['id'] == my_id:
                         max_other_length = max(max_other_length, len(snake['body']))
 
-            return len(data['you']['body']) < max_other_length + 2
+            return len(data['you']['body']) < max_other_length + self.runtime_config.is_food_strategy_threshold
 
-        if is_food_strategy_mode:
+        if is_food_strategy_mode():
+            mode = "FOOD"
             move = self.foodStrategy.move(data)
         else:
+            mode = "LEARN"
             move = self.qlearnerStrategy.move(data)
 
-        print(f"THIS TURN({data['turn']}) MOVE({move})")
+        print(f"THIS TURN({data['turn']}) <{mode}> MOVE({move})")
 
         return {"move": move}
 
