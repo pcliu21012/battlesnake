@@ -1,10 +1,10 @@
 {
     "num_states": 320000,
-    "rar": 0.5,
+    "rar": 0.9,
     "Q": "qtable.json",
     "runtime": {
         "is_learning_mode": true,
-        "dump_at_end": false,
+        "dump_at_end": true,
         "health_threshold": 100,
         "health_threshold_decay": 0.9
     }
