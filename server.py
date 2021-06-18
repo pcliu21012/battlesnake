@@ -53,8 +53,23 @@ class Battlesnake(object):
         # This function is called on every turn of a game. It's how your snake decides where to move.
         # Valid moves are "up", "down", "left", or "right".
         data = cherrypy.request.json
-        # move = self.qlearnerStrategy.move(data)
-        move = self.foodStrategy.move(data)
+
+        def is_food_strategy_mode():
+            is_food_strategy_threshold = 2
+
+            my_id = data['you']['id']
+            max_other_length = 0
+            if 'snakes' in board:
+                for snake in board['snakes']:
+                    if not snake['id'] == my_id:
+                        max_other_length = max(max_other_length, len(snake['body']))
+
+            return len(data['you']['body']) < max_other_length + 2
+
+        if is_food_strategy_mode:
+            move = self.foodStrategy.move(data)
+        else:
+            move = self.qlearnerStrategy.move(data)
 
         print(f"THIS TURN({data['turn']}) MOVE({move})")
 
