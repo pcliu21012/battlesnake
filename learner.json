@@ -1,11 +1,12 @@
 {
     "num_states": 320000,
-    "rar": 0.9,
+    "rar": 0.0,
     "Q": "qtable.json",
     "runtime": {
-        "is_learning_mode": true,
-        "dump_at_end": true,
+        "is_learning_mode": false,
+        "dump_at_end": false,
         "health_threshold": 100,
-        "health_threshold_decay": 0.9
+        "health_threshold_decay": 0.9,
+        "is_food_strategy_threshold": 2
     }
 }
