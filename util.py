@@ -22,6 +22,7 @@ def construct_borad(data):
     # 1 = barrier
     # 2 = food
     # 3 = head
+    # 4 = my tail
     board = data['board']
     h = board['height']
     w = board['width']
@@ -42,6 +43,10 @@ def construct_borad(data):
     head = you['head']
     if isInsideBoundary(head['y'], head['x'], w, h):
         states[head['y'], head['x']] = 3
+
+    if len(you['body']) > 3:
+        states[you['body'][-1]['y'], you['body'][-1]['x']] = 4
+
     return states
 
 # Determine block array
