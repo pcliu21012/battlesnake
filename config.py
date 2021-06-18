@@ -17,6 +17,7 @@ class RuntimeConfig(object):
         self.is_learning_mode = config.get('is_learning_mode', True)
         self.health_threshold = config.get('health_threshold', 100)
         self.health_threshold_decay = config.get('health_threshold_decay', 0.9)
+        self.is_food_strategy_threshold = config.get('is_food_strategy_threshold', 2)
         self.dump_at_end = config.get('dump_at_end', False)
 
 
