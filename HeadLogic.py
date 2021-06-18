@@ -29,6 +29,13 @@ class HeadLogic:
                 else:
                     # attack
                     move_scores = self.head_attack_move(head, my_head, move_scores)
+            if self.is_opposite(head, my_head):
+                if length >= my_length:
+                    # dodge
+                    move_scores = self.opposite_head_dodge_move(head, my_head, move_scores)
+                else:
+                    # attack
+                    move_scores = self.opposite_head_attack_move(head, my_head, move_scores)
 
         for a in range(len(block_arr)):
             if block_arr[a]:
@@ -46,6 +53,9 @@ class HeadLogic:
 
     def is_diagonal(self, head, my_head):
         return abs(head[0] - my_head[0]) == 1 and abs(head[1] - my_head[1]) == 1
+
+    def is_opposite(self, head, my_head):
+        return (abs(head[0] - my_head[0]) == 2 and abs(head[1] - my_head[1]) == 0) or (abs(head[0] - my_head[0]) == 0 and abs(head[1] - my_head[1]) == 2)
 
     def head_dodge_move(self, head, my_head, move_scores):
         if head[0] - my_head[0] == 1 and head[1] - my_head[1] == 1:
@@ -83,4 +93,42 @@ class HeadLogic:
             # down left, attack down or left
             move_scores[1] += 1
             move_scores[2] += 1
+        return move_scores
+
+    def opposite_head_dodge_move(self, head, my_head, move_scores):
+        if head[0] - my_head[0] == 2 and head[1] - my_head[1] == 0:
+            # up
+            move_scores[1] += 1
+            move_scores[2] += 1
+            move_scores[3] += 1
+        elif head[0] - my_head[0] == -2 and head[1] - my_head[1] == 0:
+            # down
+            move_scores[0] += 1
+            move_scores[2] += 1
+            move_scores[3] += 1
+        elif head[0] - my_head[0] == 0 and head[1] - my_head[1] == -2:
+            # left
+            move_scores[0] += 1
+            move_scores[1] += 1
+            move_scores[3] += 1
+        else:
+            # right
+            move_scores[0] += 1
+            move_scores[1] += 1
+            move_scores[2] += 1
+        return move_scores
+
+    def opposite_head_attack_move(self, head, my_head, move_scores):
+        if head[0] - my_head[0] == 2 and head[1] - my_head[1] == 0:
+            # up
+            move_scores[0] += 1
+        elif head[0] - my_head[0] == -2 and head[1] - my_head[1] == 0:
+            # down
+            move_scores[1] += 1
+        elif head[0] - my_head[0] == 0 and head[1] - my_head[1] == -2:
+            # left
+            move_scores[2] += 1
+        else:
+            # right
+            move_scores[3] += 1
         return move_scores
