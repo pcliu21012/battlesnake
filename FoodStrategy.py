@@ -1,8 +1,5 @@
-import numpy as np
 import util
-
 import config as cf
-
 
 class State(object):
     def __init__(self, pos, direct, parent):
