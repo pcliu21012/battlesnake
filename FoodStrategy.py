@@ -1,5 +1,6 @@
 import util
 import config as cf
+import numpy as np
 
 class State(object):
     def __init__(self, pos, direct, parent):
@@ -39,7 +40,7 @@ class FoodStrategy(object):
         my_length = len(data['you']['body'])
         move_scores = [0, 0, 0, 0]
         for head, length in zip(other_heads, other_lengths):
-            if is_diagonal(head, my_head):
+            if self.is_diagonal(head, my_head):
                 if length >= my_length:
                     # dodge
                     move_scores = self.head_dodge_move(head, my_head, move_scores)
@@ -187,20 +188,20 @@ class FoodStrategy(object):
         while len(queue) > 0:
             s = queue.pop(0)
             next_pos, next_dirs = self.getAvailableNext(s.pos, h, w, states)
-            for np, nd in zip(next_pos, next_dirs):
-                if np in visited:
+            for npos, nd in zip(next_pos, next_dirs):
+                if npos in visited:
                     continue
-                if np == closest_food:
+                if npos == closest_food:
                     # Break the loop and return the path
                     path = []
-                    cur = State(pos=np, direct=nd, parent=s)
+                    cur = State(pos=npos, direct=nd, parent=s)
                     while cur.direct is not None:
                         path.append(cur.direct)
                         cur = cur.parent
                     path.reverse()
                     return path
-                queue.append(State(pos=np, direct=nd, parent=s))
-                visited.add(np)
+                queue.append(State(pos=npos, direct=nd, parent=s))
+                visited.add(npos)
         return []
 
     def getAvailableNext(self, pos, h, w, states):
