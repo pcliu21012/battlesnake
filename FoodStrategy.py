@@ -68,7 +68,7 @@ class FoodStrategy(object):
             # chose the move with max possible routes
             ideal_move = max_routes_dir
 
-        elif util.calculate_possible_routes(head['y'], head['x'], ideal_move, w, h, states) < self.small_area_threshold:
+        elif routes[ideal_move] < self.small_area_threshold:
             # First move is possible but towards to a small close area
             # chose the move with max possible routes
             ideal_move = max_routes_dir

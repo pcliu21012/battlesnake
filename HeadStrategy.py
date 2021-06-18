@@ -26,24 +26,13 @@ class HeadStrategy(object):
         w = board['width']
         you = data['you']
         head = you['head']
-        states = util.construct_borad(data)
-        routes = [-1, -1, -1, -1]
+
+        states = data['states']
+        block_arr = data['block_arr']
+        routes = data['routes']
 
         # Choose a random direction to move in
         possible_moves = ["up", "down", "left", "right"]
-
-        block_arr = util.determine_block_array(data, states, self.num_actions)
-
-        # Find the non-block direction which will have the maximum routes
-        max_routes_dir = 0
-        max_routes = -1
-        for a in range(self.num_actions):
-            if not block_arr[a]:
-                possible_routes = util.calculate_possible_routes(head['y'], head['x'], a, w, h, states)
-                routes[a] = possible_routes
-                if possible_routes > max_routes:
-                    max_routes_dir = a
-                    max_routes = possible_routes
 
         # head move logic
         ideal_move = self.headLogic.head_move(data, block_arr, routes)

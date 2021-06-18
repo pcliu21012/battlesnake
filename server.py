@@ -6,6 +6,7 @@ import config as cf
 import QLearnerStrategy as qs
 import FoodStrategy as fs
 import HeadStrategy as hs
+import util
 
 """
 This is a simple Battlesnake server written in Python.
@@ -56,6 +57,26 @@ class Battlesnake(object):
         # This function is called on every turn of a game. It's how your snake decides where to move.
         # Valid moves are "up", "down", "left", or "right".
         data = cherrypy.request.json
+
+        # calculate routes
+        board = data['board']
+        h = board['height']
+        w = board['width']
+        you = data['you']
+        head = you['head']
+        states = util.construct_borad(data)
+        routes = [-1, -1, -1, -1]
+
+        block_arr = util.determine_block_array(data, states, len(routes))
+
+        for a in range(len(routes)):
+            if not block_arr[a]:
+                possible_routes = util.calculate_possible_routes(head['y'], head['x'], a, w, h, states)
+                routes[a] = possible_routes
+
+        data['states'] = states
+        data['block_arr'] = block_arr
+        data['routes'] = routes
 
         # HeadStrategy first
         move = self.headStrategy.move(data)
